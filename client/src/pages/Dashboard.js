@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 // Компонент прогрес-бару
 function ProgressBar({ value, max, color }) {
@@ -30,7 +30,7 @@ function WeekCalendar({ selectedDate, onSelectDate }) {
         {week.map((d, i) => {
           const dateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
           const isSelected = dateStr === selectedDate;
-          const isToday = dateStr === today.toISOString().split('T')[0];
+          const isToday = dateStr === new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().split('T')[0];
           return (
             <div key={i} onClick={() => onSelectDate(dateStr)}
               style={{
@@ -430,9 +430,7 @@ const fetchData = async (date) => {
   const totalProtein = foodLogs.reduce((sum, f) => sum + (f.protein || 0), 0);
   const totalFat = foodLogs.reduce((sum, f) => sum + (f.fat || 0), 0);
   const totalCarbs = foodLogs.reduce((sum, f) => sum + (f.carbs || 0), 0);
-  const totalBurned = workoutLogs.reduce((sum, w) => sum + w.calories_burned, 0);
-  const caloriesLeft = goals.goal_calories - totalCalories + totalBurned;
-
+  const caloriesLeft = goals.goal_calories - totalCalories;
   const isToday = selectedDate === today;
 
   return (
@@ -448,27 +446,55 @@ const fetchData = async (date) => {
       {/* Календар */}
       <WeekCalendar selectedDate={selectedDate} onSelectDate={setSelectedDate} />
 
-      {/* Головна картка калорій */}
-      <div className="card" style={{textAlign:'center', marginBottom:'16px'}}>
-        <p style={{color:'#64748b', fontSize:'0.875rem', marginBottom:'8px'}}>Залишилось калорій</p>
-        <p style={{color: caloriesLeft >= 0 ? '#4ade80' : '#f87171', fontSize:'3rem', fontWeight:'700'}}>{caloriesLeft}</p>
-        <p style={{color:'#475569', fontSize:'0.875rem'}}>з {goals.goal_calories} ккал</p>
+{/* Головна картка калорій */}
+<div className="card" style={{marginBottom:'16px'}}>
+  <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+    
+    {/* Круговий прогрес */}
+    <div style={{position:'relative', width:'140px', height:'140px', flexShrink:0}}>
+      <svg width="140" height="140" style={{transform:'rotate(-90deg)'}}>
+        <circle cx="70" cy="70" r="60" fill="none" stroke="#1e3a5f" strokeWidth="12"/>
+        <circle cx="70" cy="70" r="60" fill="none" stroke="#2563eb" strokeWidth="12"
+          strokeDasharray={`${Math.min((totalCalories / goals.goal_calories) * 376, 376)} 376`}
+          strokeLinecap="round" style={{transition:'stroke-dasharray 0.5s ease'}}/>
+      </svg>
+      <div style={{position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', textAlign:'center'}}>
+        <p style={{color: caloriesLeft >= 0 ? '#4ade80' : '#f87171', fontSize:'1.5rem', fontWeight:'700', lineHeight:1}}>{caloriesLeft}</p>
+        <p style={{color:'#64748b', fontSize:'0.65rem', marginTop:'2px'}}>залишилось</p>
+      </div>
+    </div>
 
-        <div style={{display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'16px', marginTop:'20px'}}>
-          <div>
-            <p style={{color:'#64748b', fontSize:'0.75rem'}}>Спожито</p>
-            <p style={{color:'#4ade80', fontWeight:'700', fontSize:'1.1rem'}}>{totalCalories}</p>
+    {/* Статистика */}
+    <div style={{flex:1, paddingLeft:'24px'}}>
+      <p style={{color:'#fff', fontWeight:'700', fontSize:'1.1rem', marginBottom:'16px'}}>
+        {isToday ? 'Сьогодні' : selectedDate}
+      </p>
+      <div style={{display:'flex', flexDirection:'column', gap:'10px'}}>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+            <div style={{width:'10px', height:'10px', borderRadius:'50%', background:'#4ade80'}}></div>
+            <span style={{color:'#64748b', fontSize:'0.875rem'}}>Спожито</span>
           </div>
-          <div>
-            <p style={{color:'#64748b', fontSize:'0.75rem'}}>Спалено</p>
-            <p style={{color:'#fb923c', fontWeight:'700', fontSize:'1.1rem'}}>{totalBurned}</p>
+          <span style={{color:'#4ade80', fontWeight:'700'}}>{totalCalories} ккал</span>
+        </div>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+            <div style={{width:'10px', height:'10px', borderRadius:'50%', background:'#38bdf8'}}></div>
+            <span style={{color:'#64748b', fontSize:'0.875rem'}}>Норма</span>
           </div>
-          <div>
-            <p style={{color:'#64748b', fontSize:'0.75rem'}}>Норма</p>
-            <p style={{color:'#38bdf8', fontWeight:'700', fontSize:'1.1rem'}}>{goals.goal_calories}</p>
+          <span style={{color:'#38bdf8', fontWeight:'700'}}>{goals.goal_calories} ккал</span>
+        </div>
+        <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
+          <div style={{display:'flex', alignItems:'center', gap:'8px'}}>
+            <div style={{width:'10px', height:'10px', borderRadius:'50%', background: caloriesLeft >= 0 ? '#4ade80' : '#f87171'}}></div>
+            <span style={{color:'#64748b', fontSize:'0.875rem'}}>Залишилось</span>
           </div>
+          <span style={{color: caloriesLeft >= 0 ? '#4ade80' : '#f87171', fontWeight:'700'}}>{caloriesLeft} ккал</span>
         </div>
       </div>
+    </div>
+  </div>
+</div>
 
       {/* КБЖВ */}
       <div className="card" style={{marginBottom:'16px'}}>
