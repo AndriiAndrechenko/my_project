@@ -2,28 +2,28 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+ 
 function MonthCalendar({ logs, onSelectDate, selectedDate }) {
   const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000);
   const [currentMonth, setCurrentMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-
+ 
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-
+ 
   const monthNames = ['Січень','Лютий','Березень','Квітень','Травень','Червень','Липень','Серпень','Вересень','Жовтень','Листопад','Грудень'];
   const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Нд'];
-
+ 
   const weightByDate = {};
   logs.forEach(log => { weightByDate[log.date] = log.weight; });
-
+ 
   const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
-
+ 
   const cells = [];
   for (let i = 0; i < adjustedFirstDay; i++) cells.push(null);
   for (let i = 1; i <= daysInMonth; i++) cells.push(i);
-
+ 
   return (
     <div style={{background:'#1e293b', borderRadius:'16px', padding:'20px', marginBottom:'16px', border:'1px solid #334155'}}>
       {/* Заголовок */}
@@ -32,25 +32,25 @@ function MonthCalendar({ logs, onSelectDate, selectedDate }) {
         <h3 style={{color:'#fff', fontWeight:'700'}}>{monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}</h3>
         <button onClick={nextMonth} style={{background:'#334155', border:'none', color:'#fff', borderRadius:'8px', padding:'6px 12px', cursor:'pointer', fontSize:'1rem'}}>→</button>
       </div>
-
+ 
       {/* Дні тижня */}
       <div style={{display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'4px', marginBottom:'8px'}}>
         {dayNames.map(d => (
           <div key={d} style={{textAlign:'center', color:'#64748b', fontSize:'0.75rem', padding:'4px'}}>{d}</div>
         ))}
       </div>
-
+ 
       {/* Дні місяця */}
       <div style={{display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:'4px'}}>
         {cells.map((day, i) => {
           if (!day) return <div key={i}></div>;
-
+ 
           const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth()+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
           const todayStr = today.toISOString().split('T')[0];
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
           const hasWeight = weightByDate[dateStr];
-
+ 
           return (
             <div key={i} onClick={() => onSelectDate(dateStr)}
               style={{
@@ -75,7 +75,7 @@ function MonthCalendar({ logs, onSelectDate, selectedDate }) {
     </div>
   );
 }
-
+ 
 function Weight() {
   const { user } = useAuth();
   const [logs, setLogs] = useState([]);
@@ -84,12 +84,12 @@ function Weight() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [selectedDate, setSelectedDate] = useState(null);
-
+ 
   const today = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
   const headers = { Authorization: `Bearer ${user.token}` };
-
+ 
   useEffect(() => { fetchLogs(); }, []);
-
+ 
   const fetchLogs = async () => {
     try {
       const res = await axios.get('http://localhost:5000/api/weight', { headers });
@@ -100,9 +100,9 @@ function Weight() {
       }
     } catch (err) { console.error(err); }
   };
-
+ 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -118,35 +118,35 @@ function Weight() {
     } catch { setMessage('❌ Помилка збереження'); }
     finally { setLoading(false); }
   };
-
+ 
   const handleDelete = async (id) => {
     try {
       await axios.delete(`http://localhost:5000/api/weight/${id}`, { headers });
       fetchLogs();
     } catch (err) { console.error(err); }
   };
-
+ 
   const handleSelectDate = (date) => {
     setSelectedDate(date);
     setForm({ weight: '', date });
   };
-
+ 
   const selectedLog = selectedDate ? logs.find(l => l.date === selectedDate) : null;
-
+ 
   const tooltipStyle = {
     backgroundColor: '#1e293b',
     border: '1px solid #334155',
     borderRadius: '8px',
     color: '#e2e8f0'
   };
-
+ 
   return (
     <div className="main-content">
       <h1 className="page-title">⚖️ Моніторинг ваги</h1>
-
+ 
       {/* Календар */}
       <MonthCalendar logs={logs} onSelectDate={handleSelectDate} selectedDate={selectedDate} />
-
+ 
       {/* Інфо про вибраний день */}
       {selectedDate && (
         <div className="card" style={{marginBottom:'16px'}}>
@@ -177,7 +177,7 @@ function Weight() {
           )}
         </div>
       )}
-
+ 
       {/* Форма якщо день не вибраний */}
       {!selectedDate && (
         <div className="card">
@@ -202,11 +202,11 @@ function Weight() {
           </form>
         </div>
       )}
-
+ 
       {message && selectedDate && (
         <div className={`alert ${message.includes('✅') ? 'alert-success' : 'alert-error'}`}>{message}</div>
       )}
-
+ 
       {/* Графік */}
       {logs.length > 0 && (
         <div className="card">
@@ -222,7 +222,7 @@ function Weight() {
           </ResponsiveContainer>
         </div>
       )}
-
+ 
       {/* Прогноз */}
       {prediction && (
         <div className="card">
@@ -230,7 +230,7 @@ function Weight() {
           <p style={{color:'#64748b', fontSize:'0.8rem', marginBottom:'16px'}}>
             На основі харчування, тренувань та базового метаболізму
           </p>
-
+ 
           <div style={{background:'#0f172a', borderRadius:'12px', padding:'16px', marginBottom:'16px', border:'1px solid #334155'}}>
             <p style={{color:'#94a3b8', fontSize:'0.875rem', marginBottom:'12px', fontWeight:'600'}}>📊 Деталі розрахунку:</p>
             <div style={{display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:'8px'}}>
@@ -254,12 +254,12 @@ function Weight() {
               </div>
             </div>
           </div>
-
+ 
           <p style={{color:'#64748b', fontSize:'0.875rem', marginBottom:'16px'}}>
             Поточна вага: <span style={{color:'#fff', fontWeight:'600'}}>{prediction.current} кг</span>
             {' · '}Тенденція: <span style={{color: prediction.trend === 'зростання' ? '#f87171' : prediction.trend === 'зниження' ? '#4ade80' : '#94a3b8', fontWeight:'600'}}>{prediction.trend}</span>
           </p>
-
+ 
           <div className="prediction-grid">
             <div className="prediction-card">
               <p className="prediction-label">Через 7 днів</p>
@@ -283,7 +283,7 @@ function Weight() {
               </p>
             </div>
           </div>
-
+ 
           <div style={{background:'#0f172a', borderRadius:'12px', padding:'16px', marginTop:'16px', border:'1px solid #334155'}}>
             <p style={{color:'#94a3b8', fontSize:'0.875rem'}}>
               💡 <strong style={{color:'#e2e8f0'}}>Порада:</strong>{' '}
@@ -295,9 +295,105 @@ function Weight() {
               }
             </p>
           </div>
+ 
+          {/* Блок рекомендацій (продукційні правила) */}
+          {(() => {
+            const delta = prediction.predictions.days7 - prediction.current;
+            const balance = prediction.dailyBalance;
+            const goalCal = 2000;
+ 
+            let recommendations = [];
+ 
+            // Правило 1: вага зростає + профіцит калорій
+            if (delta > 0.3 && balance > 300) {
+              recommendations.push({
+                icon: '🍽️',
+                title: 'Зменшити калорійність',
+                text: `Прогнозується набір ${delta.toFixed(1)} кг за тиждень. Рекомендується зменшити добове споживання калорій на 200–300 ккал.`,
+                color: '#f87171',
+                bg: '#450a0a',
+                border: '#dc2626'
+              });
+            }
+ 
+            // Правило 2: вага зростає + калорії в нормі
+            if (delta > 0.3 && balance >= 0 && balance <= 300) {
+              recommendations.push({
+                icon: '🏃',
+                title: 'Збільшити фізичну активність',
+                text: `Вага зростає попри нормальне харчування. Рекомендується збільшити фізичну активність на 10–15% або додати 1 тренування на тиждень.`,
+                color: '#fb923c',
+                bg: '#431407',
+                border: '#ea580c'
+              });
+            }
+ 
+            // Правило 3: вага стабільна
+            if (Math.abs(delta) <= 0.1) {
+              recommendations.push({
+                icon: '✅',
+                title: 'Підтримувати поточний режим',
+                text: `Вага стабільна. Поточний баланс харчування та тренувань є оптимальним — продовжуйте в тому ж режимі.`,
+                color: '#4ade80',
+                bg: '#052e16',
+                border: '#16a34a'
+              });
+            }
+ 
+            // Правило 4: вага знижується + дефіцит калорій
+            if (delta < -0.3 && balance < -300) {
+              recommendations.push({
+                icon: '🥗',
+                title: 'Збільшити калорійність',
+                text: `Виявлено значний дефіцит калорій (${Math.abs(balance)} ккал/день). Рекомендується збільшити добову калорійність на 100–200 ккал для збереження м'язової маси.`,
+                color: '#38bdf8',
+                bg: '#0c1a2e',
+                border: '#0284c7'
+              });
+            }
+ 
+            // Якщо жодне правило не спрацювало — загальна порада
+            if (recommendations.length === 0) {
+              recommendations.push({
+                icon: '📊',
+                title: 'Продовжуйте моніторинг',
+                text: `Даних поки недостатньо для точної рекомендації. Продовжуйте фіксувати вагу, харчування та тренування щодня.`,
+                color: '#94a3b8',
+                bg: '#0f172a',
+                border: '#334155'
+              });
+            }
+ 
+            return (
+              <div style={{marginTop:'16px'}}>
+                <h3 style={{color:'#fff', fontWeight:'700', marginBottom:'12px', fontSize:'1rem'}}>
+                  🤖 Рекомендації системи
+                </h3>
+                <p style={{color:'#64748b', fontSize:'0.75rem', marginBottom:'12px'}}>
+                  Сформовано на основі продукційних правил (delta_weight = {delta.toFixed(2)} кг, баланс = {balance} ккал/день)
+                </p>
+                {recommendations.map((rec, i) => (
+                  <div key={i} style={{
+                    background: rec.bg,
+                    border: `1px solid ${rec.border}`,
+                    borderRadius:'12px',
+                    padding:'16px',
+                    marginBottom:'10px'
+                  }}>
+                    <p style={{color: rec.color, fontWeight:'700', fontSize:'0.9rem', marginBottom:'6px'}}>
+                      {rec.icon} {rec.title}
+                    </p>
+                    <p style={{color:'#94a3b8', fontSize:'0.85rem', lineHeight:'1.5'}}>
+                      {rec.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       )}
-
+ 
       {/* Історія */}
       {logs.length > 0 && (
         <div className="card">
@@ -316,5 +412,5 @@ function Weight() {
     </div>
   );
 }
-
+ 
 export default Weight;

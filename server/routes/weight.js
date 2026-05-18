@@ -64,10 +64,14 @@ router.get('/predict', authMiddleware, (req, res) => {
 
   // Отримуємо середні калорії за останні 14 днів
   const last14Days = db.prepare(`
-    SELECT AVG(calories) as avg_calories
-    FROM food_logs
-    WHERE user_id = ?
-    AND date >= date('now', '-14 days')
+    SELECT AVG(daily_total) as avg_calories
+    FROM (
+      SELECT date, SUM(calories) as daily_total
+      FROM food_logs
+      WHERE user_id = ?
+      AND date >= date('now', '-14 days')
+      GROUP BY date
+    )
   `).get(user_id);
 
   // Отримуємо середні спалені калорії за останні 14 днів
@@ -83,7 +87,7 @@ router.get('/predict', authMiddleware, (req, res) => {
 
   // Щоденний енергетичний баланс
   // Баланс = спожиті - (витрати організму + тренування)
-  const dailyBalance = avgCalories - (dailyExpenditure + avgBurned);
+  const dailyBalance = avgCalories - dailyExpenditure;
 
   // Зміна ваги: 1 кг жиру = 7700 ккал
   const weightChangePerDay = dailyBalance / 7700;
